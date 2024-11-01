@@ -1,7 +1,7 @@
 {
     "dependencies": {
         "dom-to-image-more": "^3.4.5",
-        "element-plus": "^2.7.6",
+        "element-plus": "^2.8.6",
         "essaycode-parser": "^2.0.3",
         "image-js": "^0.35.6",
         "qrcode": "^1.5.4",
