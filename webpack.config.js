@@ -9,7 +9,15 @@ module.exports = {
         rules: [
             { test: /\.vue$/, use: "vue-loader" },
             { test: /\.css$/, use: ["vue-style-loader", "css-loader"] },
-            { test: /\.js$/, use: "babel-loader" },
+            {
+                test: /\.js$/,
+                use: {
+                    loader: "babel-loader",
+                    options: {
+                        targets: "last 2 major versions, not dead, not <.5%",
+                    },
+                },
+            },
             {
                 test: /\.(png|svg|jpg|jpeg|gif)$/i,
                 type: "asset/resource",

@@ -292,7 +292,9 @@ export default {
                     transformOrigin: "top left",
                 },
             };
-            domtoimage.toPng(ele, options).then((dataUrl) => {
+            // if d4 directly use cus_img
+            if (id == "d4") {
+                let dataUrl = this.cus_img;
                 image
                     .proc1(dataUrl, this.print_size / 100, this.rotation)
                     .then((data1) => {
@@ -302,14 +304,36 @@ export default {
                             image
                                 .proc2(
                                     data1.data,
-                                    im_attri.recommend_x,
-                                    im_attri.recommend_y
+                                    data1.attributes.recommend_x,
+                                    data1.attributes.recommend_y
                                 )
                                 .then((ops) => {
                                     image.send_to_printer(ops, this.form.name);
                                 });
                     });
-            });
+            } else {
+                domtoimage.toPng(ele, options).then((dataUrl) => {
+                    image
+                        .proc1(dataUrl, this.print_size / 100, this.rotation)
+                        .then((data1) => {
+                            this.im_attri = data1.attributes;
+                            this.prevImg = data1.data;
+                            if (print)
+                                image
+                                    .proc2(
+                                        data1.data,
+                                        data1.attributes.recommend_x,
+                                        data1.attributes.recommend_y
+                                    )
+                                    .then((ops) => {
+                                        image.send_to_printer(
+                                            ops,
+                                            this.form.name
+                                        );
+                                    });
+                        });
+                });
+            }
         },
         switchBW(bw = false) {
             //set filter: grayscale(1) contrast(2); for output

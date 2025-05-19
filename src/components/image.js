@@ -6,22 +6,26 @@ export default {
         return dec.toString(16);
     },
     async proc1(img_base64_datauri, print_scale = 1.0, print_orientation = 0) {
-        //rotate 90 degrees, and set width to 384 px
-        //check if set width to 384px, is height > 640
+        //rotate 90 degrees, and set width to 360 px
+        //check if set width to 360px, is height > 640
         let sh = await Image.load(img_base64_datauri);
         sh = sh.rotate(90 + print_orientation);
-        let r_height = sh.height * (384 / sh.width) * print_scale;
-        let r_width = 384 * print_scale;
-        let recommend_x = (384 - r_width) / 2;
+        console.log(sh.width, sh.height);
+        let r_height = sh.height * (360 / sh.width) * print_scale;
+        let r_width = 360 * print_scale;
+        console.log(r_width, r_height);
+        let recommend_x = (360 - r_width) / 2;
         let recommend_y = (640 - r_height) / 2;
         if (r_height > 640) {
             r_height = 640 * print_scale;
             r_width = sh.width * (640 / sh.height) * print_scale;
+            recommend_x = (360 - r_width) / 2;
+            recommend_y = 0;
         }
-        if (sh.height * (384 / sh.width) > 640) {
+        if (sh.height * (360 / sh.width) > 640) {
             sh = sh.resize({ height: 640 * print_scale });
         } else {
-            sh = sh.resize({ width: 384 * print_scale });
+            sh = sh.resize({ width: 360 * print_scale });
         }
         sh = sh.grey();
         return {
@@ -45,8 +49,8 @@ export default {
             start_y = 0;
         }
         sh = sh.mask({ threshold: 0.6 });
-        let result = "1b401a5b01";
-        let xywh_p = "0000000080015802"; //width :384 ->  height: 640
+        let result = "1b401b370950301a5b01";
+        let xywh_p = "0000000080015802"; //width :360 ->  height: 640
         let xywh_i = "";
         let x_L = start_x & 0xff;
         let x_L_H = x_L >> 4;
@@ -58,6 +62,16 @@ export default {
         xywh_i += this.dechex(x_L_L);
         xywh_i += this.dechex(x_H_H);
         xywh_i += this.dechex(x_H_L);
+        let y_L = start_y & 0xff;
+        let y_L_H = y_L >> 4;
+        let y_L_L = y_L & 0x0f;
+        let y_H = (start_y >> 8) & 0xff;
+        let y_H_H = y_H >> 4;
+        let y_H_L = y_H & 0x0f;
+        xywh_i += this.dechex(y_L_H);
+        xywh_i += this.dechex(y_L_L);
+        xywh_i += this.dechex(y_H_H);
+        xywh_i += this.dechex(y_H_L);
         let width_L = sh.width & 0xff;
         let width_L_H = width_L >> 4;
         let width_L_L = width_L & 0x0f;
@@ -98,29 +112,54 @@ export default {
             });
         });
     },
+    // send_to_printer(data, label) {
+    //     if (label == "") {
+    //         label = "unnamed";
+    //     }
+    //     let description = "propertycode of " + label;
+    //     fetch("https://www.tmysam.top/print/apis/post_print_task.php", {
+    //         method: "POST",
+    //         headers: {
+    //             "Content-Type": "application/x-www-form-urlencoded",
+    //         },
+    //         body: "data=" + data + "&printer_id=1&description=" + description,
+    //         credentials: "include",
+    //     })
+    //         .then((response) => response.json())
+    //         .then((data) => {
+    //             if (data.status != "success") {
+    //                 ElMessage.error("Failed to print: " + data.message);
+    //             } else {
+    //                 ElMessage.success("Sent to task list.");
+    //             }
+    //         })
+    //         .catch((error) => {
+    //             ElMessage.error("Failed to print: " + error);
+    //         });
+    // },
     send_to_printer(data, label) {
+        // not send to printer, just generate a file
         if (label == "") {
             label = "unnamed";
         }
-        let description = "propertycode of " + label;
-        fetch("https://www.tmysam.top/print/apis/post_print_task.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: "data=" + data + "&printer_id=1&description=" + description,
-            credentials: "include",
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.status != "success") {
-                    ElMessage.error("Failed to print: " + data.message);
-                } else {
-                    ElMessage.success("Sent to task list.");
-                }
-            })
-            .catch((error) => {
-                ElMessage.error("Failed to print: " + error);
-            });
+        let fname = "pc_" + label + ".scmd"; //serial command
+        // for each two characters, treat as a byte, generate a file
+        let byte_array = [];
+        for (let i = 0; i < data.length; i += 2) {
+            let byte = parseInt(data.substr(i, 2), 16);
+            byte_array.push(byte);
+        }
+        let blob = new Blob([new Uint8Array(byte_array)], {
+            type: "application/octet-stream",
+        });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        ElMessage.success("Generated file: " + fname);
     },
 };

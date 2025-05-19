@@ -1,6 +1,6 @@
 <template>
     <div id="preview">
-        <img :src="image_r" alt="Preview" id="preview-img" />
+        <img :srcset="image_r" alt="Preview" id="preview-img" />
     </div>
 </template>
 
@@ -30,11 +30,7 @@ export default {
         tr_img() {
             Image.load(this.image)
                 .then((img) => {
-                    this.image_r = img
-                        .rotate(270)
-                        .grey()
-                        .resize({ factor: 0.5 })
-                        .toDataURL();
+                    this.image_r = img.rotate(270).grey().toDataURL() + " 2x";
                 })
                 .catch((err) => {
                     console.error(err);
