@@ -127,3 +127,13 @@ dist
 .pnp.*
 
 apis
+
+draw_small.py
+draw_stickers.py
+gen.py
+generated.txt
+properties.xlsx
+stickers/
+cert/
+fonts/
+backend/

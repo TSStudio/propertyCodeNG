@@ -152,7 +152,14 @@
     <div ref="output" class="output">
         {{ form }}<br />
         <el-button type="primary" @click="copy()">Copy</el-button>
-        <el-button type="primary" @click="d_pr_c()">Print</el-button>
+        <el-button type="primary" @click="openSerial()">Open Serial</el-button>
+        <el-button type="primary" @click="d_pr_c()">Download</el-button>
+        <el-button
+            type="primary"
+            @click="print_serial()"
+            v-show="serialPort != null"
+            >Print</el-button
+        >
         <el-button type="primary" @click="download_element()"
             >Download</el-button
         >
@@ -235,6 +242,7 @@ export default {
             selected: "d1",
             prevImg: "",
             cus_img: "",
+            serialPort: null,
         };
     },
     methods: {
@@ -335,6 +343,81 @@ export default {
                 });
             }
         },
+        print_raw_serial_data(data_p) {
+            let byte_array = [];
+            for (let i = 0; i < data_p.length; i += 2) {
+                let byte = parseInt(data_p.substr(i, 2), 16);
+                byte_array.push(byte);
+            }
+            let _data = new Uint8Array(byte_array);
+            if (this.serialPort) {
+                let writer = this.serialPort.writable.getWriter();
+                writer
+                    .write(_data)
+                    .then(() => {
+                        ElMessage.success("Data Sent to Serial Port");
+                    })
+                    .catch((error) => {
+                        ElMessage.error("Error Sending Data: " + error);
+                    })
+                    .finally(() => {
+                        writer.releaseLock();
+                    });
+            } else {
+                ElMessage.error("Serial Port Not Opened");
+            }
+        },
+        print_serial() {
+            let id = this.selected;
+            let scale = this.scale;
+            let ele = document.getElementById(id);
+            const options = {
+                width: ele.clientWidth * scale,
+                height: ele.clientHeight * scale,
+                style: {
+                    transform: "scale(" + scale + ")",
+                    transformOrigin: "top left",
+                },
+            };
+            // if d4 directly use cus_img
+            if (id == "d4") {
+                let dataUrl = this.cus_img;
+                image
+                    .proc1(dataUrl, this.print_size / 100, this.rotation)
+                    .then((data1) => {
+                        this.im_attri = data1.attributes;
+                        this.prevImg = data1.data;
+                        image
+                            .proc2(
+                                data1.data,
+                                data1.attributes.recommend_x,
+                                data1.attributes.recommend_y
+                            )
+                            .then((ops) => {
+                                this.print_raw_serial_data(ops);
+                            });
+                    });
+            } else {
+                domtoimage.toPng(ele, options).then((dataUrl) => {
+                    image
+                        .proc1(dataUrl, this.print_size / 100, this.rotation)
+                        .then((data1) => {
+                            this.im_attri = data1.attributes;
+                            this.prevImg = data1.data;
+                            if (print)
+                                image
+                                    .proc2(
+                                        data1.data,
+                                        data1.attributes.recommend_x,
+                                        data1.attributes.recommend_y
+                                    )
+                                    .then((ops) => {
+                                        this.print_raw_serial_data(ops);
+                                    });
+                        });
+                });
+            }
+        },
         switchBW(bw = false) {
             //set filter: grayscale(1) contrast(2); for output
             let output = this.$refs.output;
@@ -414,6 +497,24 @@ export default {
             a.download = filename;
             a.click();
             //URL.revokeObjectURL(url);
+        },
+        openSerial() {
+            if ("serial" in navigator) {
+                ElMessage.success("Opening Serial Port...");
+            } else {
+                ElMessage.error("Serial API not supported in this browser.");
+                return;
+            }
+            navigator.serial
+                .requestPort()
+                .then((port) => {
+                    this.serialPort = port;
+                    ElMessage.info("Opening Serial Port: " + this.serialPort);
+                    this.serialPort.open({ baudRate: 115200 });
+                })
+                .catch((error) => {
+                    ElMessage.error("Error Requesting Serial Port: " + error);
+                });
         },
     },
     components: {

@@ -2,6 +2,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { VueLoaderPlugin } = require("vue-loader");
 const { ElementPlusResolver } = require("unplugin-vue-components/resolvers");
 const { EnvironmentPlugin } = require("webpack");
+const fs = require("fs");
 
 module.exports = {
     entry: "./src/main.js",
@@ -65,6 +66,15 @@ module.exports = {
                     return !ignoreErrors.includes(error.message);
                 },
             },
+        },
+        server: {
+            type: "https",
+            options: fs.existsSync("./cert/local.tmysam.top-key.pem")
+                ? {
+                      key: fs.readFileSync("./cert/local.tmysam.top-key.pem"),
+                      cert: fs.readFileSync("./cert/local.tmysam.top.pem"),
+                  }
+                : {},
         },
     },
 };
