@@ -4,7 +4,7 @@ require.ensure(
         var _require = require("vue"),
             createApp = _require.createApp;
 
-        var App = require("./App.vue").default;
+        var App = require("./AppNG.vue").default;
         require("./css/style.css");
 
         var app = createApp(App);
