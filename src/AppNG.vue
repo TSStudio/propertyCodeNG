@@ -14,6 +14,9 @@
                 :format-tooltip="zoomFormat"
             />
         </el-form-item>
+        <el-form-item label="Print Count">
+            <el-input-number v-model="printcount" :min="1" :max="10" />
+        </el-form-item>
         <!--Open Image Files-->
         <input
             type="file"
@@ -43,13 +46,14 @@
     </div>
 </template>
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { Image } from "image-js";
 import PreviewNG from "./components/previewNG.vue";
 import { get_print_command } from "./image_proc.js";
 const images = ref([]);
 const processed_images = ref([]);
 const zoom = ref(100);
+const printcount = ref(1);
 const zoomFormat = (val) => {
     return val / 100;
 };
@@ -64,6 +68,7 @@ const processImage = async (imgSrc) => {
     return sh.toDataURL();
 };
 const print_raw_serial_data = (data_p) => {
+    console.log("Sending Data to Serial Port: ", data_p);
     let byte_array = [];
     for (let i = 0; i < data_p.length; i += 2) {
         let byte = parseInt(data_p.substr(i, 2), 16);
@@ -95,10 +100,10 @@ const reProcessImages = async () => {
         processed_images.value.push(processedImg);
     }
 };
-const serialPrint = () => {
+const serialPrint = async () => {
     for (let i = 0; i < processed_images.value.length; i++) {
         const img = processed_images.value[i];
-        let cmd = get_print_command(img);
+        let cmd = await get_print_command(img, printcount.value);
         print_raw_serial_data(cmd);
     }
 };
@@ -124,6 +129,7 @@ onMounted(() => {
     const fileLoader = document.getElementById("file_loader");
 
     fileLoader.addEventListener("change", async (event) => {
+        images.value = [];
         const files = event.target.files;
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
@@ -136,5 +142,8 @@ onMounted(() => {
         }
         await reProcessImages();
     });
+});
+watch([zoom, rotation], async () => {
+    await reProcessImages();
 });
 </script>

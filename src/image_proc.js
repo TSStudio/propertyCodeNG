@@ -49,8 +49,8 @@ export const get_print_command = async (image_uri, printcount = 1) => {
         result += "00";
     } else {
         result += "01";
-        let pc_L = pc & 0x0f;
-        let pc_H = (pc >> 4) & 0x0f;
+        let pc_L = printcount & 0x0f;
+        let pc_H = (printcount >> 4) & 0x0f;
         result += dechex(pc_H);
         result += dechex(pc_L);
     }
